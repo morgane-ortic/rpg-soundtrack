@@ -1,0 +1,45 @@
+<AudioPlayer>:
+    BoxLayout:
+        orientation: 'vertical'
+        spacing: 10
+        padding: 20
+
+        RecycleView:
+            viewclass: 'TrackItem'
+            id: track_list
+            RecycleBoxLayout:
+                orientation: 'vertical'
+                size_hint_y: None
+                height: self.minimum_height
+        
+        BoxLayout:
+
+            Button:
+                text: "Play"
+                size_hint: 0.2, 0.1
+                on_press: root.play_audio(self)
+
+            Button:
+                text: "Pause"
+                size_hint: 0.2, 0.1
+                on_press: root.pause_audio(self)
+
+            Button:
+                text: "Previous"
+                size_hint: 0.2, 0.1
+                on_press: root.previous_track(self)
+
+            Button:
+                text: "Stop"
+                size_hint: 0.2, 0.1
+                on_press: root.stop_audio(self)
+
+            Button:
+                text: "Next"
+                size_hint: 0.2, 0.1
+                on_press: root.next_track(self)
+
+<TrackItem@Label>:
+    size_hint_y: None
+    height: 40
+    text_size: self.size
