@@ -11,21 +11,31 @@ class AudioPlayer(BoxLayout):
         
         self.list_player = vlc.MediaListPlayer()
         self.media_list = vlc.MediaList()
+        #Empty list to fill and display track list on Kivy GUI
+        self.text_tracklist = []
         self.list_player.set_media_list(self.media_list)
 
         self.player = vlc.MediaPlayer()  # Regular media player
         self.list_player.set_media_player(self.player)  # Link both players
+
         self.add_media('test.mp3')
         self.add_media('test2.m4a')
         self.add_media('test3.mp3')
 
+        self.show_tracklist()
+
         self.paused = False
+
 
     def add_media(self, file_path):
         '''Adds a media file to the list'''
+        # Create vlc Media from file
         media = vlc.Media(file_path)
+        # Add media to our vlc media list
         self.media_list.add_media(media)
-        print(f'Added media: {media}')
+        # Add track name filename to text list
+        self.text_tracklist.append(file_path)
+        print(f'Added media: {file_path} - {media}')
 
     def play_audio(self, instance):
         self.paused = False
@@ -61,6 +71,14 @@ class AudioPlayer(BoxLayout):
         '''Ensure the player is paused only after it's started playing'''
         if self.player.get_state() == vlc.State.Playing:
             self.pause_audio(None)
+
+    def show_tracklist(self):
+        # refering to RecycleView id in kv file
+        rv = self.ids.tracklist 
+        # Assigning track names from text_tracklist to recycleview
+        rv.data = [{'text': name} for name in self.text_tracklist]
+        print(rv.data)
+
 
 
 class SimultrackApp(App):
