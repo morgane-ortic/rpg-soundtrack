@@ -1,3 +1,11 @@
+# Trackname styling
+<TrackName@Label>:
+    color: 1, 1, 1, 1
+    font_size: 16
+    halign: 'left'
+    valign: 'middle'
+    text_size: self.size
+
 <AudioPlayer>:
     BoxLayout:
         orientation: 'vertical'
@@ -5,12 +13,23 @@
         padding: 20
 
         RecycleView:
-            viewclass: 'TrackItem'
-            id: track_list
+            id: tracklist
+            viewclass: 'TrackName'
+            size_hint_y: None
+            height: 200  # or use self.minimum_height if dynamic
             RecycleBoxLayout:
                 orientation: 'vertical'
+                default_size: None, 40
+                default_size_hint: 1, None
                 size_hint_y: None
                 height: self.minimum_height
+
+                canvas.before:
+                    Color:
+                        rgba: 0.25, 0.25, 0.25, 1
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
         
         BoxLayout:
 
