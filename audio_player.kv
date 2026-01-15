@@ -1,37 +1,62 @@
-# Trackname styling
-<TrackName@Label>:
+#:import sp kivy.metrics.sp
+#:set DFT_FONT 14
+#:set BTN_HEIGHT dp(32)
+
+<TrackRow@BoxLayout>:
     index: 0
+    text: ''
     bg_color: 0.25, 0.25, 0.25, 1
+    checked: False
+    orientation: 'horizontal'
+    size_hint_y: None
+    height: 28
+    spacing: 8
+
+
+    # Highlight current track row
     canvas.before:
         Color:
-            rgba: self.bg_color
+            rgba: root.bg_color
         Rectangle:
             pos: self.pos
             size: self.size
-    color: 1, 1, 1, 1
-    font_size: 16
-    halign: 'left'
-    valign: 'middle'
-    text_size: self.size
 
-    on_touch_down:
-        if self.collide_point(*args[1].pos) and args[1].is_double_tap: app.root.play_audio(None, index=self.index)
+    # Label area handles double click and shows background color
+    Label:
+        id: lbl
+        text: root.text
+        font_size: DFT_FONT
+        size_hint_x: 0.85
+        padding: 10
+        valign: 'middle'
+        text_size: self.size
+        on_touch_down:
+            # use args[1] for RecycleView compatibility
+            if self.collide_point(*args[1].pos) and args[1].is_double_tap: app.root.play_audio(None, index=root.index)
+
+    # Checkbox column
+    CheckBox:
+        id: cb
+        size_hint_x: 0.15
+        active: root.checked
+        on_active: app.root.on_row_checkbox(root.index, self.active)
 
 
 <AudioPlayer>:
-    BoxLayout:
-        orientation: 'vertical'
-        spacing: 10
-        padding: 20
+    GridLayout:
+        cols: 1
+        rows: 2
+        spacing: 0
+        padding: 0
 
         RecycleView:
             id: tracklist
-            viewclass: 'TrackName'
-            size_hint_y: None
+            viewclass: 'TrackRow'
+            size_hint_y: 
             height: 200  # or use self.minimum_height if dynamic
             RecycleBoxLayout:
                 orientation: 'vertical'
-                default_size: None, 40
+                default_size: None, 28
                 default_size_hint: 1, None
                 size_hint_y: None
                 height: self.minimum_height
@@ -44,30 +69,57 @@
                         size: self.size
         
         BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: BTN_HEIGHT + 8
+            spacing: dp(8)
+            padding: dp(8), dp(4)   # left/right, top/bottom
+
+            canvas.before:
+                Color:
+                    rgba: 0.18, 0.18, 0.18, 1   # row background color
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
 
             Button:
                 text: "Play"
-                size_hint: 0.2, 0.1
+                font_size: DFT_FONT
+                size_hint_x: None
+                size_hint_y: None
+                height: BTN_HEIGHT
                 on_press: root.play_audio(self)
 
             Button:
                 text: "Pause"
-                size_hint: 0.2, 0.1
+                font_size: DFT_FONT
+                size_hint_x: None
+                size_hint_y: None
+                height: BTN_HEIGHT
                 on_press: root.pause_audio(self)
 
             Button:
                 text: "Previous"
-                size_hint: 0.2, 0.1
+                font_size: DFT_FONT
+                size_hint_x: None
+                size_hint_y: None
+                height: BTN_HEIGHT
                 on_press: root.previous_track(self)
 
             Button:
                 text: "Stop"
-                size_hint: 0.2, 0.1
+                font_size: DFT_FONT
+                size_hint_x: None
+                size_hint_y: None
+                height: BTN_HEIGHT
                 on_press: root.stop_audio(self)
 
             Button:
                 text: "Next"
-                size_hint: 0.2, 0.1
+                font_size: DFT_FONT
+                size_hint_x: None
+                size_hint_y: None
+                height: BTN_HEIGHT
                 on_press: root.next_track(self)
 
 <TrackItem@Label>:
