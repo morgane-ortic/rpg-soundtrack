@@ -1,4 +1,5 @@
 from time import sleep
+import threading
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -10,7 +11,8 @@ class AudioPlayer(BoxLayout):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-    
+
+        self.repeat = {}
         self.default = (0.25, 0.25, 0.25, 1)
         self.highlight = (0.5, 0.5, 0.5, 1)
         
@@ -30,6 +32,7 @@ class AudioPlayer(BoxLayout):
 
         self.add_media('test.mp3')
         self.add_media('test2.m4a')
+        self.add_media('test4.mp3')
         self.add_media('test3.mp3')
 
         self.show_tracklist()
@@ -48,7 +51,7 @@ class AudioPlayer(BoxLayout):
         self.update_track_highlight()
         print(f'Added media: {file_path} - {media}')
 
-    def play_audio(self, instance, index=None):
+    def play_audio(self, instance=None, index=None):
         count = self.media_list.count()
         if count == 0:
             return
@@ -112,26 +115,55 @@ class AudioPlayer(BoxLayout):
 
     def _on_track_end(self, event):
         """VLC event callback when a track finishes naturally."""
+
+        # schedule to main thread if called from VLC thread
+        if threading.current_thread() is not threading.main_thread():
+            Clock.schedule_once(lambda dt: self._on_track_end(event))
+            return
+
         count = self.media_list.count()
         if count == 0:
             return
+
+        # Check if current track is set on repeat
+        if self.repeat.get(self.current_index):
+            # prevent duplicate timers and race conditions
+            Clock.unschedule(self.check_playback)
+            try:
+                self.list_player.stop()
+            except Exception:
+                pass
+
+            self.play_audio(index=self.current_index)
+            return
+
         self.current_index = (self.current_index + 1) % count
         self.update_track_highlight()
+        self.play_audio(index=self.current_index)
 
     def show_tracklist(self):
         # refering to RecycleView id in kv file
         rv = self.ids.tracklist
         # Assigning track names from text_tracklist to recycleview
-        rv.data = [ {'text': name, 'bg_color': self.highlight if i == self.current_index else self.default, 'index': i} for i, name in enumerate(self.text_tracklist) ]
+        rv.data = [
+            {
+                'text': name,
+                'bg_color': self.highlight if i == self.current_index else self.default,
+                'index': i,
+                'checked': getattr(self, 'repeat', {}).get(i, False)
+            } for i, name in enumerate(self.text_tracklist) ]
         print(rv.data)
 
     def update_track_highlight(self):
         rv = self.ids.tracklist
-        default = (0.25, 0.25, 0.25, 1)
-        highlight = (0.5, 0.5, 0.5, 1)
         for i, item in enumerate(rv.data):
             item['bg_color'] = self.highlight if i == self.current_index else self.default
+            item['checked'] = self.repeat.get(i, item.get('checked', False))
         rv.refresh_from_data()
+
+    def on_row_checkbox(self, index, active):
+        self.repeat[index] = bool(active)
+        print(f'self.repeat: {self.repeat}\nself.repeat[index]: {self.repeat[index]}\n')
 
 
 
