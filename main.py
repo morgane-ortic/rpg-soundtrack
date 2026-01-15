@@ -5,9 +5,14 @@ from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 import vlc
+
 class AudioPlayer(BoxLayout):
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+    
+        self.default = (0.25, 0.25, 0.25, 1)
+        self.highlight = (0.5, 0.5, 0.5, 1)
         
         self.list_player = vlc.MediaListPlayer()
         self.media_list = vlc.MediaList()
@@ -17,6 +22,11 @@ class AudioPlayer(BoxLayout):
 
         self.player = vlc.MediaPlayer()  # Regular media player
         self.list_player.set_media_player(self.player)  # Link both players
+
+        self.current_index = 0
+
+        em = self.player.event_manager()
+        em.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_track_end)
 
         self.add_media('test.mp3')
         self.add_media('test2.m4a')
@@ -35,11 +45,29 @@ class AudioPlayer(BoxLayout):
         self.media_list.add_media(media)
         # Add track name filename to text list
         self.text_tracklist.append(file_path)
+        self.update_track_highlight()
         print(f'Added media: {file_path} - {media}')
 
-    def play_audio(self, instance):
+    def play_audio(self, instance, index=None):
+        count = self.media_list.count()
+        if count == 0:
+            return
+
+        # if caller requested a specific index, use it; otherwise keep current_index
+        if index is not None:
+            index = max(0, min(index, count - 1))
+            self.current_index = index
+
+        self.current_index = max(0, min(self.current_index, count - 1))
+        self.update_track_highlight()
+        # Check if track is paused
+        if getattr(self, 'paused', False) and index is None:
+            # If yes keep playing at same point
+            self.list_player.play()
+        else:
+            # if not (for instance stopped) play at index from track start
+            self.list_player.play_item_at_index(self.current_index)
         self.paused = False
-        self.list_player.play()
         Clock.schedule_interval(self.check_playback, 1)  # Check every second
     
     def check_playback(self, dt):
@@ -57,13 +85,23 @@ class AudioPlayer(BoxLayout):
 
     def next_track(self, instance):
         '''Skip to the next track'''
+        count = self.media_list.count()
+        if count == 0:
+            return
         self.list_player.next()
+        self.current_index = (self.current_index + 1) % count
+        self.update_track_highlight()
         if self.paused:
             Clock.schedule_once(self.ensure_pause)
 
     def previous_track(self, instance):
         '''Go back to the previous track'''
+        count = self.media_list.count()
+        if count == 0:
+            return
         self.list_player.previous()
+        self.current_index = (self.current_index - 1) % count
+        self.update_track_highlight()
         if self.paused:
             Clock.schedule_once(self.ensure_pause)
 
@@ -72,12 +110,29 @@ class AudioPlayer(BoxLayout):
         if self.player.get_state() == vlc.State.Playing:
             self.pause_audio(None)
 
+    def _on_track_end(self, event):
+        """VLC event callback when a track finishes naturally."""
+        count = self.media_list.count()
+        if count == 0:
+            return
+        self.current_index = (self.current_index + 1) % count
+        self.update_track_highlight()
+
     def show_tracklist(self):
         # refering to RecycleView id in kv file
-        rv = self.ids.tracklist 
+        rv = self.ids.tracklist
         # Assigning track names from text_tracklist to recycleview
-        rv.data = [{'text': name} for name in self.text_tracklist]
+        rv.data = [ {'text': name, 'bg_color': self.highlight if i == self.current_index else self.default, 'index': i} for i, name in enumerate(self.text_tracklist) ]
         print(rv.data)
+
+    def update_track_highlight(self):
+        rv = self.ids.tracklist
+        default = (0.25, 0.25, 0.25, 1)
+        highlight = (0.5, 0.5, 0.5, 1)
+        for i, item in enumerate(rv.data):
+            item['bg_color'] = self.highlight if i == self.current_index else self.default
+        rv.refresh_from_data()
+
 
 
 
