@@ -1,5 +1,7 @@
 from time import sleep
+import os
 import threading
+from dotenv import load_dotenv
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
@@ -11,6 +13,8 @@ class AudioPlayer(BoxLayout):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.load_env()
 
         self.repeat = {}
         self.default = (0.25, 0.25, 0.25, 1)
@@ -30,15 +34,19 @@ class AudioPlayer(BoxLayout):
         em = self.player.event_manager()
         em.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_track_end)
 
-        self.add_media('test.mp3')
-        self.add_media('test2.m4a')
-        self.add_media('test4.mp3')
-        self.add_media('test3.mp3')
+        self.add_media(self.MEDIA_1)
+        self.add_media(self.MEDIA_2)
+        self.add_media(self.MEDIA_3)
 
         self.show_tracklist()
 
         self.paused = False
 
+    def load_env(self):
+        load_dotenv()
+        self.MEDIA_1 = os.getenv('MEDIA_1')
+        self.MEDIA_2 = os.getenv('MEDIA_2')
+        self.MEDIA_3 = os.getenv('MEDIA_3')
 
     def add_media(self, file_path):
         '''Adds a media file to the list'''
