@@ -7,6 +7,7 @@ from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 import vlc
+from utils import format_duration
 
 class AudioPlayer(BoxLayout):
 
@@ -39,19 +40,27 @@ class AudioPlayer(BoxLayout):
     def get_media(self):
         filename_list = os.listdir('media')
         for filename in filename_list:
-            self.add_media(f'media/{filename}')
-            input(filename)
+            self.add_media(f'media/{filename}', filename)
 
-    def add_media(self, file_path):
+    def add_media(self, file_path, filename):
         '''Adds a media file to the list'''
         # Create vlc Media from file
         media = vlc.Media(file_path)
         # Add media to our vlc media list
         self.media_list.add_media(media)
+        # Define metadata for this media
+        media.parse()
+        # Get the duration in SECONDS as INT
+        duration = media.get_duration()
+        text_track = {
+            'file_path': file_path,
+            'filename': filename,
+            'duration': duration
+        }
         # Add track name filename to text list
-        self.text_tracklist.append(file_path)
+        self.text_tracklist.append(text_track)
         self.update_track_highlight()
-        print(f'Added media: {file_path} - {media}')
+        print(f'Added media: {filename} - {media}')
 
     def play_audio(self, instance=None, index=None):
         count = self.media_list.count()
@@ -149,11 +158,12 @@ class AudioPlayer(BoxLayout):
         # Assigning track names from text_tracklist to recycleview
         rv.data = [
             {
-                'text': name,
+                'text': item['filename'],
+                'duration': format_duration(item['duration']),
                 'bg_color': self.highlight if i == self.current_index else self.default,
                 'index': i,
                 'checked': getattr(self, 'repeat', {}).get(i, False)
-            } for i, name in enumerate(self.text_tracklist) ]
+            } for i, item in enumerate(self.text_tracklist) ]
         print(rv.data)
 
     def update_track_highlight(self):

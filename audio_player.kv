@@ -1,10 +1,12 @@
 #:import sp kivy.metrics.sp
-#:set DFT_FONT 14
+#:set DFT_FONT 16
 #:set BTN_HEIGHT dp(32)
 
+# This is a class that is later instantiated. The TrackRow is NOT directly displayed here but LATER inside the RecycleView!
 <TrackRow@BoxLayout>:
     index: 0
     text: ''
+    duration: ''
     bg_color: 0.25, 0.25, 0.25, 1
     checked: False
     orientation: 'horizontal'
@@ -26,18 +28,28 @@
         id: lbl
         text: root.text
         font_size: DFT_FONT
-        size_hint_x: 0.85
-        padding: 10
+        size_hint_x: 0.76
+        padding: 30, 10, 10, 10
         valign: 'middle'
         text_size: self.size
         on_touch_down:
             # use args[1] for RecycleView compatibility
             if self.collide_point(*args[1].pos) and args[1].is_double_tap: app.root.play_audio(None, index=root.index)
 
+    # Duration column
+    Label:
+        id: duration
+        text: root.duration
+        font_size: DFT_FONT
+        size_hint_x: 0.12
+        padding: 10
+        valign: 'middle'
+        text_size: self.size
+
     # Checkbox column
     CheckBox:
         id: cb
-        size_hint_x: 0.15
+        size_hint_x: 0.12
         active: root.checked
         on_active: app.root.on_row_checkbox(root.index, self.active)
 
@@ -48,6 +60,55 @@
         rows: 2
         spacing: 0
         padding: 0
+
+        canvas.before:
+            Color:
+                rgba: 0.25, 0.25, 0.25, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        BoxLayout:
+            index: 0
+            text: ''
+            bg_color: 0.25, 0.25, 0.25, 1
+            checked: False
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: 28
+            spacing: 8
+
+            Label:
+                id: title_header
+                text: 'Title'
+                font_size: DFT_FONT
+                bold: True
+                size_hint_x: 0.76
+                padding: 10
+                valign: 'middle'
+                text_size: self.size
+
+            Label:
+                id: duration_header
+                text: 'Duration'
+                font_size: DFT_FONT
+                bold: True
+                size_hint_x: 0.12
+                padding: 10
+                valign: 'middle'
+                text_size: self.size
+
+            Label:
+                id: repeat_header
+                text: 'Repeat'
+                font_size: DFT_FONT
+                bold: True
+                size_hint_x: 0.12
+                padding: 10
+                valign: 'middle'
+                text_size: self.size
+
+
 
         RecycleView:
             id: tracklist
