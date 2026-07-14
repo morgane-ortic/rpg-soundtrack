@@ -262,7 +262,20 @@ class AudioPlayer(BoxLayout):
     ### KEYBOARD COMMANDS ###
 
     def on_key_down(self, window, key, *args):
-        if key == 273:
+
+        if key == 32:
+            if self.paused:
+                self.player.play()
+                self.paused = False
+            else:
+                self.player.pause()
+                self.paused = True
+            return True
+
+        elif key == 115:
+            self.stop_audio(None)
+
+        elif key == 273:
             self.move_track_up(None)
             return True
 
