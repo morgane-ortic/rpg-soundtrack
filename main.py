@@ -45,7 +45,7 @@ class AudioPlayer(BoxLayout):
         file_paths = filedialog.askopenfilenames(
             title="Select media files",
             filetypes=[
-                ("Media files", "*.mp3 *.wav *.flac *.ogg *.m4a *.aac *.mp4 *.mkv *.avi"),
+                ("Media files", "*.mp3 *.wav *.flac *.ogg *.m4a *.aac *.mp4 *.mkv *.avi *webm"),
                 ("All files", "*.*")
             ]
         )
