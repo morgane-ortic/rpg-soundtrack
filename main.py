@@ -6,6 +6,7 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from tkinter import Tk, filedialog
 import vlc
 from utils import format_duration
 
@@ -32,15 +33,31 @@ class AudioPlayer(BoxLayout):
         em = self.player.event_manager()
         em.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_track_end)
 
-        self.get_media()
-        self.show_tracklist()
-
         self.paused = False
+        # Set up keyboard listener
+        Window.bind(on_key_down=self.on_key_down)
 
     def get_media(self):
-        filename_list = os.listdir('media')
-        for filename in filename_list:
-            self.add_media(f'media/{filename}', filename)
+        root = Tk()
+        root.withdraw()              # Hide the Tk root window
+        root.attributes('-topmost', True)
+
+        file_paths = filedialog.askopenfilenames(
+            title="Select media files",
+            filetypes=[
+                ("Media files", "*.mp3 *.wav *.flac *.ogg *.m4a *.aac *.mp4 *.mkv *.avi"),
+                ("All files", "*.*")
+            ]
+        )
+
+        root.destroy()
+
+        for file_path in file_paths:
+            filename = os.path.basename(file_path)
+            self.add_media(file_path, os.path.basename(file_path))
+        # Update tracklist to see every new media
+        self.show_tracklist()
+
 
     def add_media(self, file_path, filename):
         '''Adds a media file to the list'''
@@ -62,17 +79,68 @@ class AudioPlayer(BoxLayout):
         self.update_track_highlight()
         print(f'Added media: {filename} - {media}')
 
+
+    def remove_media(self, index):
+        if index < 0 or index >= len(self.text_tracklist):
+            return
+
+        self.text_tracklist.pop(index)
+
+        # Fix current selection
+        if self.current_index >= len(self.text_tracklist):
+            self.current_index = max(0, len(self.text_tracklist) - 1)
+
+        self.show_tracklist()
+        self.update_track_highlight()
+
+
+    def move_track_up(self, instance):
+        if self.current_index <= 0:
+            return
+
+        i = self.current_index
+
+        # Swap tracks
+        self.text_tracklist[i], self.text_tracklist[i - 1] = (
+            self.text_tracklist[i - 1],
+            self.text_tracklist[i]
+        )
+
+        self.current_index -= 1
+
+        self.show_tracklist()
+        self.update_track_highlight()
+
+
+    def move_track_down(self, instance):
+        if self.current_index >= len(self.text_tracklist) - 1:
+            return
+
+        i = self.current_index
+
+        # Swap tracks
+        self.text_tracklist[i], self.text_tracklist[i + 1] = (
+            self.text_tracklist[i + 1],
+            self.text_tracklist[i]
+        )
+
+        self.current_index += 1
+
+        self.show_tracklist()
+        self.update_track_highlight()
+
+
     def play_audio(self, instance=None, index=None):
-        count = self.media_list.count()
+        count = len(self.text_tracklist)
+        
         if count == 0:
             return
 
-        # if caller requested a specific index, use it; otherwise keep current_index
         if index is not None:
-            index = max(0, min(index, count - 1))
             self.current_index = index
 
         self.current_index = max(0, min(self.current_index, count - 1))
+
         self.update_track_highlight()
         # Check if track is paused
         if getattr(self, 'paused', False) and index is None:
@@ -80,7 +148,10 @@ class AudioPlayer(BoxLayout):
             self.list_player.play()
         else:
             # if not (for instance stopped) play at index from track start
-            self.list_player.play_item_at_index(self.current_index)
+            track = self.text_tracklist[self.current_index]
+            media = vlc.Media(track['file_path'])
+            self.player.set_media(media)
+            self.player.play()
         self.paused = False
         Clock.schedule_interval(self.check_playback, 1)  # Check every second
     
@@ -95,29 +166,31 @@ class AudioPlayer(BoxLayout):
 
     def pause_audio(self, instance):
         self.paused = True  # Track paused state
-        self.list_player.pause()
+        self.player.pause()
 
     def next_track(self, instance):
         '''Skip to the next track'''
         count = self.media_list.count()
         if count == 0:
             return
-        self.list_player.next()
-        self.current_index = (self.current_index + 1) % count
-        self.update_track_highlight()
-        if self.paused:
-            Clock.schedule_once(self.ensure_pause)
+        # If last track in playlist, don't go to next
+        if self.current_index >= count - 1:
+            return
+
+        self.current_index += 1
+        self.play_audio()
 
     def previous_track(self, instance):
         '''Go back to the previous track'''
         count = self.media_list.count()
         if count == 0:
             return
-        self.list_player.previous()
-        self.current_index = (self.current_index - 1) % count
-        self.update_track_highlight()
-        if self.paused:
-            Clock.schedule_once(self.ensure_pause)
+        # If first track in playlist, don't go to previous                
+        if self.current_index <= 0:
+            return
+
+        self.current_index -= 1
+        self.play_audio()
 
     def ensure_pause(self, instance):
         '''Ensure the player is paused only after it's started playing'''
@@ -176,6 +249,36 @@ class AudioPlayer(BoxLayout):
     def on_row_checkbox(self, index, active):
         self.repeat[index] = bool(active)
         print(f'self.repeat: {self.repeat}\nself.repeat[index]: {self.repeat[index]}\n')
+
+    def row_pressed(self, index, touch):
+        '''Behaviour when media row is (double-)clicked on playlist'''
+        self.current_index = index
+        self.update_track_highlight()
+
+        if touch.is_double_tap:
+            self.play_audio(None, index=index)
+
+
+    ### KEYBOARD COMMANDS ###
+
+    def on_key_down(self, window, key, *args):
+        if key == 273:
+            self.move_track_up(None)
+            return True
+
+        elif key == 274:
+            self.move_track_down(None)
+            return True
+
+        elif key == 275:
+            self.next_track(None)
+            return True
+
+        elif key == 276:
+            self.previous_track(None)
+            return True
+
+        return False
 
 
 

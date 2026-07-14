@@ -1,6 +1,19 @@
 #:import sp kivy.metrics.sp
-#:set DFT_FONT 16
+#:set DFT_FONT "NotoSans-Medium.ttf"
+#:set DFT_FONT_SIZE 16
 #:set BTN_HEIGHT dp(32)
+
+<Label>:
+    font_name: DFT_FONT
+    font_size: DFT_FONT_SIZE
+
+<Button>:
+    font_name: DFT_FONT
+    font_size: DFT_FONT_SIZE
+    size_hint_x: None
+    size_hint_y: None
+    height: BTN_HEIGHT
+    width: dp(60)
 
 # This is a class that is later instantiated. The TrackRow is NOT directly displayed here but LATER inside the RecycleView!
 <TrackRow@BoxLayout>:
@@ -27,20 +40,19 @@
     Label:
         id: lbl
         text: root.text
-        font_size: DFT_FONT
+        font_size: DFT_FONT_SIZE
         size_hint_x: 0.76
         padding: 30, 10, 10, 10
         valign: 'middle'
         text_size: self.size
         on_touch_down:
-            # use args[1] for RecycleView compatibility
-            if self.collide_point(*args[1].pos) and args[1].is_double_tap: app.root.play_audio(None, index=root.index)
+            if self.collide_point(*args[1].pos): app.root.row_pressed(root.index, args[1])
 
     # Duration column
     Label:
         id: duration
         text: root.duration
-        font_size: DFT_FONT
+        font_size: DFT_FONT_SIZE
         size_hint_x: 0.12
         padding: 10
         valign: 'middle'
@@ -57,7 +69,7 @@
 <AudioPlayer>:
     GridLayout:
         cols: 1
-        rows: 2
+        rows: 3
         spacing: 0
         padding: 0
 
@@ -67,6 +79,33 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
+
+        
+        
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: BTN_HEIGHT + 8
+            spacing: dp(8)
+            padding: dp(8), dp(4)   # left/right, top/bottom
+
+            Button:
+                text: "Open"
+                on_release: root.get_media()
+
+            Button:
+                text: "^"
+                on_release: root.move_track_up(self)
+
+            Button:
+                text: "v"
+                on_release: root.move_track_down(self)
+
+            Button:
+                text: "X"
+                background_normal: ''
+                background_color: 1, 0, 0, 1
+                on_release: app.root.remove_media(root.index)
 
         BoxLayout:
             index: 0
@@ -81,7 +120,6 @@
             Label:
                 id: title_header
                 text: 'Title'
-                font_size: DFT_FONT
                 bold: True
                 size_hint_x: 0.76
                 padding: 10
@@ -91,7 +129,6 @@
             Label:
                 id: duration_header
                 text: 'Duration'
-                font_size: DFT_FONT
                 bold: True
                 size_hint_x: 0.12
                 padding: 10
@@ -101,7 +138,6 @@
             Label:
                 id: repeat_header
                 text: 'Repeat'
-                font_size: DFT_FONT
                 bold: True
                 size_hint_x: 0.12
                 padding: 10
@@ -136,51 +172,29 @@
             spacing: dp(8)
             padding: dp(8), dp(4)   # left/right, top/bottom
 
-            canvas.before:
-                Color:
-                    rgba: 0.18, 0.18, 0.18, 1   # row background color
-                Rectangle:
-                    pos: self.pos
-                    size: self.size
+            Button:
+                text: ">"
+                background_color: 0, 0, 0, 1
+                on_release: root.play_audio(self)
 
             Button:
-                text: "Play"
-                font_size: DFT_FONT
-                size_hint_x: None
-                size_hint_y: None
-                height: BTN_HEIGHT
-                on_press: root.play_audio(self)
+                text: "||"
+                background_color: 0, 0, 0, 1
+                on_release: root.pause_audio(self)
 
             Button:
-                text: "Pause"
-                font_size: DFT_FONT
-                size_hint_x: None
-                size_hint_y: None
-                height: BTN_HEIGHT
-                on_press: root.pause_audio(self)
+                text: "<<|"
+                background_color: 0, 0, 0, 1
+                on_release: root.previous_track(self)
 
             Button:
-                text: "Previous"
-                font_size: DFT_FONT
-                size_hint_x: None
-                size_hint_y: None
-                height: BTN_HEIGHT
-                on_press: root.previous_track(self)
+                text: "[ ]"
+                background_color: 0, 0, 0, 1
+                on_release: root.stop_audio(self)
 
             Button:
-                text: "Stop"
-                font_size: DFT_FONT
-                size_hint_x: None
-                size_hint_y: None
-                height: BTN_HEIGHT
-                on_press: root.stop_audio(self)
-
-            Button:
-                text: "Next"
-                font_size: DFT_FONT
-                size_hint_x: None
-                size_hint_y: None
-                height: BTN_HEIGHT
+                text: "|>>"
+                background_color: 0, 0, 0, 1
                 on_press: root.next_track(self)
 
 <TrackItem@Label>:
