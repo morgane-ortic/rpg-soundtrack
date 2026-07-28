@@ -15,18 +15,13 @@ class AudioPlayer(BoxLayout):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.repeat = {}
         self.default = (0.25, 0.25, 0.25, 1)
         self.highlight = (0.5, 0.5, 0.5, 1)
         
-        self.list_player = vlc.MediaListPlayer()
-        self.media_list = vlc.MediaList()
         #Empty list to fill and display track list on Kivy GUI
-        self.text_tracklist = []
-        self.list_player.set_media_list(self.media_list)
+        self.playlist = []
 
         self.player = vlc.MediaPlayer()  # Regular media player
-        self.list_player.set_media_player(self.player)  # Link both players
 
         self.current_index = 0
 
@@ -63,33 +58,33 @@ class AudioPlayer(BoxLayout):
         '''Adds a media file to the list'''
         # Create vlc Media from file
         media = vlc.Media(file_path)
-        # Add media to our vlc media list
-        self.media_list.add_media(media)
         # Define metadata for this media
         media.parse()
         # Get the duration in SECONDS as INT
         duration = media.get_duration()
-        text_track = {
+        track = {
             'file_path': file_path,
             'filename': filename,
-            'duration': duration
+            'duration': duration,
+            'repeat': False
         }
-        # Add track name filename to text list
-        self.text_tracklist.append(text_track)
+        # Add track info to playlist
+        self.playlist.append(track)
         self.update_track_highlight()
         print(f'Added media: {filename} - {media}')
 
 
     def remove_media(self, instance):
-        input(f'Current index: {self.current_index}')
-        if self.current_index < 0 or self.current_index >= len(self.text_tracklist):
+        if not self.playlist:
             return
 
-        self.text_tracklist.pop(self.current_index)
+        self.playlist.pop(self.current_index)
 
         # Fix current selection
-        if self.current_index >= len(self.text_tracklist):
-            self.current_index = max(0, len(self.text_tracklist) - 1)
+        if self.current_index >= len(self.playlist):
+            self.current_index = max(0, len(self.playlist) - 1)
+
+        self.player.stop()
 
         self.show_tracklist()
         self.update_track_highlight()
@@ -102,9 +97,9 @@ class AudioPlayer(BoxLayout):
         i = self.current_index
 
         # Swap tracks
-        self.text_tracklist[i], self.text_tracklist[i - 1] = (
-            self.text_tracklist[i - 1],
-            self.text_tracklist[i]
+        self.playlist[i], self.playlist[i - 1] = (
+            self.playlist[i - 1],
+            self.playlist[i]
         )
 
         self.current_index -= 1
@@ -114,15 +109,15 @@ class AudioPlayer(BoxLayout):
 
 
     def move_track_down(self, instance):
-        if self.current_index >= len(self.text_tracklist) - 1:
+        if self.current_index >= len(self.playlist) - 1:
             return
 
         i = self.current_index
 
         # Swap tracks
-        self.text_tracklist[i], self.text_tracklist[i + 1] = (
-            self.text_tracklist[i + 1],
-            self.text_tracklist[i]
+        self.playlist[i], self.playlist[i + 1] = (
+            self.playlist[i + 1],
+            self.playlist[i]
         )
 
         self.current_index += 1
@@ -132,7 +127,7 @@ class AudioPlayer(BoxLayout):
 
 
     def play_audio(self, instance=None, index=None):
-        count = len(self.text_tracklist)
+        count = len(self.playlist)
         
         if count == 0:
             return
@@ -146,10 +141,10 @@ class AudioPlayer(BoxLayout):
         # Check if track is paused
         if getattr(self, 'paused', False) and index is None:
             # If yes keep playing at same point
-            self.list_player.play()
+            self.player.play()
         else:
             # if not (for instance stopped) play at index from track start
-            track = self.text_tracklist[self.current_index]
+            track = self.playlist[self.current_index]
             media = vlc.Media(track['file_path'])
             self.player.set_media(media)
             self.player.play()
@@ -162,7 +157,7 @@ class AudioPlayer(BoxLayout):
 
     def stop_audio(self, instance):
         self.paused = False  # Reset pause tracking
-        self.list_player.stop()
+        self.player.stop()
         Clock.unschedule(self.check_playback)  # Ensure the scheduled check stops
 
     def pause_audio(self, instance):
@@ -171,7 +166,7 @@ class AudioPlayer(BoxLayout):
 
     def next_track(self, instance):
         '''Skip to the next track'''
-        count = self.media_list.count()
+        count = len(self.playlist)
         if count == 0:
             return
         # If last track in playlist, don't go to next
@@ -183,7 +178,7 @@ class AudioPlayer(BoxLayout):
 
     def previous_track(self, instance):
         '''Go back to the previous track'''
-        count = self.media_list.count()
+        count = len(self.playlist)
         if count == 0:
             return
         # If first track in playlist, don't go to previous                
@@ -206,16 +201,16 @@ class AudioPlayer(BoxLayout):
             Clock.schedule_once(lambda dt: self._on_track_end(event))
             return
 
-        count = self.media_list.count()
+        count = len(self.playlist)
         if count == 0:
             return
 
         # Check if current track is set on repeat
-        if self.repeat.get(self.current_index):
+        if self.playlist[self.current_index]['repeat']:
             # prevent duplicate timers and race conditions
             Clock.unschedule(self.check_playback)
             try:
-                self.list_player.stop()
+                self.player.stop()
             except Exception:
                 pass
 
@@ -229,27 +224,26 @@ class AudioPlayer(BoxLayout):
     def show_tracklist(self):
         # refering to RecycleView id in kv file
         rv = self.ids.tracklist
-        # Assigning track names from text_tracklist to recycleview
+        # Assigning track names from tracklist to recycleview
         rv.data = [
             {
                 'text': item['filename'],
                 'duration': format_duration(item['duration']),
                 'bg_color': self.highlight if i == self.current_index else self.default,
                 'index': i,
-                'checked': getattr(self, 'repeat', {}).get(i, False)
-            } for i, item in enumerate(self.text_tracklist) ]
+                'checked': item['repeat']
+            } for i, item in enumerate(self.playlist) ]
         print(rv.data)
 
     def update_track_highlight(self):
         rv = self.ids.tracklist
         for i, item in enumerate(rv.data):
             item['bg_color'] = self.highlight if i == self.current_index else self.default
-            item['checked'] = self.repeat.get(i, item.get('checked', False))
+            item['checked'] = self.playlist[i]['repeat']
         rv.refresh_from_data()
 
     def on_row_checkbox(self, index, active):
-        self.repeat[index] = bool(active)
-        print(f'self.repeat: {self.repeat}\nself.repeat[index]: {self.repeat[index]}\n')
+        self.playlist[index]['repeat'] = active
 
     def row_pressed(self, index, touch):
         '''Behaviour when media row is (double-)clicked on playlist'''
