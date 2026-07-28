@@ -23,7 +23,8 @@ class AudioPlayer(BoxLayout):
 
         self.player = vlc.MediaPlayer()  # Regular media player
 
-        self.current_index = 0
+        self.current_index = 0      # currently highlighted track
+        self.playing_index = None   # currently playing track
 
         em = self.player.event_manager()
         em.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_track_end)
@@ -78,14 +79,16 @@ class AudioPlayer(BoxLayout):
         if not self.playlist:
             return
 
+        removed_index = self.current_index  # we keep track of the current index BEFORE the track deletion that will change it
+
         self.playlist.pop(self.current_index)
 
         # Fix current selection
         if self.current_index >= len(self.playlist):
             self.current_index = max(0, len(self.playlist) - 1)
 
-        self.player.stop()
-
+        if removed_index == self.playing_index:
+            self.stop_audio(None)
         self.show_tracklist()
         self.update_track_highlight()
 
@@ -136,7 +139,6 @@ class AudioPlayer(BoxLayout):
             self.current_index = index
 
         self.current_index = max(0, min(self.current_index, count - 1))
-
         self.update_track_highlight()
         # Check if track is paused
         if getattr(self, 'paused', False) and index is None:
@@ -148,6 +150,7 @@ class AudioPlayer(BoxLayout):
             media = vlc.Media(track['file_path'])
             self.player.set_media(media)
             self.player.play()
+        self.playing_index = self.current_index # define which track is playing (the one selected right now)
         self.paused = False
         Clock.schedule_interval(self.check_playback, 1)  # Check every second
     
@@ -158,6 +161,7 @@ class AudioPlayer(BoxLayout):
     def stop_audio(self, instance):
         self.paused = False  # Reset pause tracking
         self.player.stop()
+        self.playing_index = None
         Clock.unschedule(self.check_playback)  # Ensure the scheduled check stops
 
     def pause_audio(self, instance):
@@ -270,6 +274,9 @@ class AudioPlayer(BoxLayout):
         elif key == 115:
             self.stop_audio(None)
 
+        elif key == 127:
+            self.remove_media(None)
+
         elif key == 273:
             self.move_track_up(None)
             return True
@@ -287,9 +294,6 @@ class AudioPlayer(BoxLayout):
             return True
 
         return False
-
-
-
 
 class SimultrackApp(App):
     def build(self):
