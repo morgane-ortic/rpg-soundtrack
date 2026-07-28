@@ -80,11 +80,12 @@ class AudioPlayer(BoxLayout):
         print(f'Added media: {filename} - {media}')
 
 
-    def remove_media(self, index):
-        if index < 0 or index >= len(self.text_tracklist):
+    def remove_media(self, instance):
+        input(f'Current index: {self.current_index}')
+        if self.current_index < 0 or self.current_index >= len(self.text_tracklist):
             return
 
-        self.text_tracklist.pop(index)
+        self.text_tracklist.pop(self.current_index)
 
         # Fix current selection
         if self.current_index >= len(self.text_tracklist):
