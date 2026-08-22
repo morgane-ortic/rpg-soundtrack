@@ -39,7 +39,6 @@ class AudioPlayer(BoxLayout):
         root = Tk()
         root.withdraw()              # Hide the Tk root window
         root.attributes('-topmost', True)
-        print(self.last_file_path)
 
         file_paths = filedialog.askopenfilenames(
             title='Select media files',
@@ -56,7 +55,6 @@ class AudioPlayer(BoxLayout):
                 filename = os.path.basename(file_path)
                 self.add_media(file_path, os.path.basename(file_path))
             self.last_file_path = os.path.dirname(file_paths[-1])
-            print(self.last_file_path)
             # Update tracklist to see every new media
             self.show_tracklist()
 
