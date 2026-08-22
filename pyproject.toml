@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rpg-soundtrack"
+version = "1.0.0"
+description = "An audio player to play background tracks easily during RPG sessions"
+requires-python = ">=3.12"
+dependencies = [
+    "kivy",
+    "python-vlc",
+]
+
+[project.scripts]
+rpg-soundtrack = "main:main"
+
+[tool.setuptools]
+py-modules = ["main", "utils"]

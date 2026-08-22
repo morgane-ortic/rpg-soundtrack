@@ -297,11 +297,14 @@ class AudioPlayer(BoxLayout):
 
         return False
 
-class SimultrackApp(App):
+class RPGSounbdtrackApp(App):
     def build(self):
-        self.title = 'Simultrack'
+        self.title = 'RPG Soundtrack'
         Builder.load_file('audio_player.kv')
         return AudioPlayer()
+
+def main():
+    RPGSounbdtrackApp().run()
     
 if __name__ == '__main__':
-    SimultrackApp().run()
+    main()

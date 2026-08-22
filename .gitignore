@@ -2,7 +2,9 @@
 venv/
 .env
 __pycache__/
-test*
-media/*
-music
-sounds
+*.py[cod]
+*.deb
+debian/
+.pybuild/
+build/
+rpg_soundtrack.egg-info/
