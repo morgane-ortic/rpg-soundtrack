@@ -6,9 +6,12 @@ from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
+from pathlib import Path
 from tkinter import Tk, filedialog
 import vlc
 from utils import format_duration
+
+APP_DIR = Path(__file__).resolve().parent
 
 class AudioPlayer(BoxLayout):
 
@@ -297,14 +300,14 @@ class AudioPlayer(BoxLayout):
 
         return False
 
-class RPGSounbdtrackApp(App):
+class RPGSoundtrackApp(App):
     def build(self):
         self.title = 'RPG Soundtrack'
-        Builder.load_file('audio_player.kv')
+        Builder.load_file(str(APP_DIR / 'audio_player.kv'))
         return AudioPlayer()
 
 def main():
-    RPGSounbdtrackApp().run()
+    RPGSoundtrackApp().run()
     
 if __name__ == '__main__':
     main()
