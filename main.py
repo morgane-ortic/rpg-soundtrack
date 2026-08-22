@@ -30,6 +30,8 @@ class AudioPlayer(BoxLayout):
         em.event_attach(vlc.EventType.MediaPlayerEndReached, self._on_track_end)
 
         self.paused = False
+        self.last_file_path = ''
+
         # Set up keyboard listener
         Window.bind(on_key_down=self.on_key_down)
 
@@ -37,22 +39,26 @@ class AudioPlayer(BoxLayout):
         root = Tk()
         root.withdraw()              # Hide the Tk root window
         root.attributes('-topmost', True)
+        print(self.last_file_path)
 
         file_paths = filedialog.askopenfilenames(
-            title="Select media files",
+            title='Select media files',
+            initialdir = self.last_file_path,
             filetypes=[
-                ("Media files", "*.mp3 *.wav *.flac *.ogg *.m4a *.aac *.mp4 *.mkv *.avi *webm"),
-                ("All files", "*.*")
+                ('Media files', '*.mp3 *.wav *.flac *.ogg *.m4a *.aac *.mp4 *.mkv *.avi *webm'),
+                ('All files', '*.*')
             ]
         )
 
         root.destroy()
-
-        for file_path in file_paths:
-            filename = os.path.basename(file_path)
-            self.add_media(file_path, os.path.basename(file_path))
-        # Update tracklist to see every new media
-        self.show_tracklist()
+        if file_paths:
+            for file_path in file_paths:
+                filename = os.path.basename(file_path)
+                self.add_media(file_path, os.path.basename(file_path))
+            self.last_file_path = os.path.dirname(file_paths[-1])
+            print(self.last_file_path)
+            # Update tracklist to see every new media
+            self.show_tracklist()
 
 
     def add_media(self, file_path, filename):
@@ -72,7 +78,6 @@ class AudioPlayer(BoxLayout):
         # Add track info to playlist
         self.playlist.append(track)
         self.update_track_highlight()
-        print(f'Added media: {filename} - {media}')
 
 
     def remove_media(self, instance):
@@ -237,7 +242,6 @@ class AudioPlayer(BoxLayout):
                 'index': i,
                 'checked': item['repeat']
             } for i, item in enumerate(self.playlist) ]
-        print(rv.data)
 
     def update_track_highlight(self):
         rv = self.ids.tracklist
