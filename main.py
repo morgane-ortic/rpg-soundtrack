@@ -47,12 +47,13 @@ class AudioPlayer(BoxLayout):
         )
 
         root.destroy()
-
-        for file_path in file_paths:
-            filename = os.path.basename(file_path)
-            self.add_media(file_path, os.path.basename(file_path))
-        # Update tracklist to see every new media
-        self.show_tracklist()
+        if file_paths:
+            for file_path in file_paths:
+                filename = os.path.basename(file_path)
+                self.add_media(file_path, os.path.basename(file_path))
+            self.last_file_path = os.path.dirname(file_paths[-1])
+            # Update tracklist to see every new media
+            self.show_tracklist()
 
 
     def add_media(self, file_path, filename):
