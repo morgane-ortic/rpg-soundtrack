@@ -2,9 +2,8 @@
 venv/
 .env
 __pycache__/
-*.py[cod]
-*.deb
-debian/
 .pybuild/
+*.egg-info/
 build/
-rpg_soundtrack.egg-info/
+dist/
+debian/
