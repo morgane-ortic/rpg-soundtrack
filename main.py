@@ -1,14 +1,18 @@
 from time import sleep
 import os
 import threading
+import traceback
+import vlc
 from kivy.app import App
 from kivy.clock import Clock
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
-from tkinter import Tk, filedialog
-import vlc
+from pathlib import Path
+from tkinter import Tk, filedialog, messagebox
 from utils import format_duration
+
+APP_DIR = Path(__file__).resolve().parent
 
 class AudioPlayer(BoxLayout):
 
@@ -297,11 +301,32 @@ class AudioPlayer(BoxLayout):
 
         return False
 
-class SimultrackApp(App):
+class RPGSoundtrackApp(App):
     def build(self):
-        self.title = 'Simultrack'
-        Builder.load_file('audio_player.kv')
+        self.title = 'RPG Soundtrack'
+        Builder.load_file(str(APP_DIR / 'audio_player.kv'))
         return AudioPlayer()
+
+def show_error(error_text):
+    root = Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+
+    messagebox.showerror(
+        "RPG Soundtrack - Fatal Error",
+        error_text
+    )
+
+    root.destroy()
+
+def main():
+    try:
+        RPGSoundtrackApp().run()
+
+    except Exception as e:
+        error_text = traceback.format_exc()
+        print(error_text)
+        show_error(error_text)
     
 if __name__ == '__main__':
-    SimultrackApp().run()
+    main()
